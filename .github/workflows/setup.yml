@@ -1,0 +1,28 @@
+# Runs once in your copy to make the labels and milestones. You don't need to touch it.
+name: Set up labels and milestones
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  setup:
+    if: github.repository != 'BigRonit/crls-project-template'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      R: ${{ github.repository }}
+    steps:
+      - name: Labels
+        run: |
+          gh label create rebuild --repo "$R" --color 1B3A6B --description "Reproducing the paper's result (to 11 Dec)" --force
+          gh label create build   --repo "$R" --color F2A93B --description "Your one change (to 8 Jan)" --force
+          gh label create blocked --repo "$R" --color B60205 --description "Stuck: the leads look for this" --force
+      - name: Milestones
+        run: |
+          have=$(gh api "repos/$R/milestones?state=all" --jq '.[].title')
+          add() { echo "$have" | grep -qxF "$1" || gh api "repos/$R/milestones" -f title="$1" -f due_on="$2" -f description="$3"; }
+          add "Rebuild · 11 Dec" "2026-12-11T23:00:00Z" "Reproduction done: matched, or the gap explained"
+          add "Build · 8 Jan" "2027-01-08T23:00:00Z" "New result compared with your rebuilt one"
+          add "Final · 15 Jan" "2027-01-15T23:00:00Z" "Club conference and MSEF forms submitted"
